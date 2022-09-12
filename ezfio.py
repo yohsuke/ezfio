@@ -270,10 +270,18 @@ def grep(inlist, regex):
 def CollectSystemInfo():
     """Collect some OS and CPU information."""
     global cpu, cpuCores, cpuFreqMHz, uname
-    uname = " ".join(platform.uname())
+    un=platform.uname()
+    uname = " ".join(un)
     code, cpuinfo, err = Run(['cat', '/proc/cpuinfo'])
     cpuinfo = cpuinfo.split("\n")
-    if 'ppc64' in uname:
+    if un.node == 'tegra-ubuntu' and un.processor == 'aarch64':
+        model_names = grep(cpuinfo, r'model name')
+        cpu = model_names[0].split(': ')[1].replace('(R)', '').replace('(TM)', '')
+        cpuCores = len(model_names)
+        code, cpuinfo, err = Run(['jetson_clocks', '--show'])
+        m = re.search("CurrentFreq=(\d+)", cpuinfo)
+        cpuFreqMHz = int(round(float(m.group(1))/1000))
+    elif 'ppc64' in uname:
         # Implement grep and sed in Python...
         cpu = grep(cpuinfo, r'model')[0].split(': ')[1].replace('(R)', '').replace('(TM)', '')
         cpuCores = len(grep(cpuinfo, r'processor'))
